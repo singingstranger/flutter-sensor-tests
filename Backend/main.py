@@ -31,3 +31,26 @@ def send_command(cmd: dict):
         machine_state["speed"] = cmd["speed"]
     
     return {"status": "ok", "state": machine_state}
+
+from fastapi import WebSocket
+import asyncio
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        while True:
+            if not machine_state["running"]:
+                value = 0
+            else:
+                t = time.time() - start_time
+                value = machine_state["speed"] * (50 + 30 * math.sin(t))
+
+            await websocket.send_json({"value": round(value, 2)})
+
+            await asyncio.sleep(0.5)
+
+    except Exception as e:
+        print("WebSocket disconnected:", e)
+        

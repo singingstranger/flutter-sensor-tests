@@ -1,5 +1,5 @@
 abstract class ProtocolService{
-  Future<double> getSensorValue();
+  Stream<double> sensorStream();
   Future<void> sendCommand(bool running, double speed);
   void dispose();
 }
