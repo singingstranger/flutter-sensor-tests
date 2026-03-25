@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/control_viewmodel.dart';
+import '../models/protocol_type.dart';
 
 class ControlPage extends StatelessWidget {
   final ControlViewModel viewModel;
@@ -18,7 +19,34 @@ class ControlPage extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
+              
               children: [
+                DropdownButton<ProtocolType>(
+                  value: viewModel.protocol,
+                  onChanged: (value) {
+                    if (value != null) {
+                      viewModel.setProtocol(value);
+                    }
+                  },
+                  items: const [
+                    DropdownMenuItem(
+                      value: ProtocolType.http,
+                      child: Text("HTTP (Polling)"),
+                    ),
+                    DropdownMenuItem(
+                      value: ProtocolType.websocket,
+                      child: Text("WebSocket (Real-time)"),
+                    ),
+                    DropdownMenuItem(
+                      value: ProtocolType.mqtt,
+                      child: Text("MQTT (Coming Soon)"),
+                    ),
+                  ],
+                ), 
+                Text(
+                  "Protocol: ${viewModel.protocol.name.toUpperCase()}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 Text(
                   state.sensorValue.toStringAsFixed(2),
                   style: const TextStyle(fontSize: 50),

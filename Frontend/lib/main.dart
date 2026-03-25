@@ -5,7 +5,7 @@ import 'views/control_page.dart';
 
 void main() {
   final service = HttpService("http://127.0.0.1:8000");
-  final viewModel = ControlViewModel(service);
+  final viewModel = ControlViewModel();
 
   runApp(SensorTestApp(viewModel));
 }

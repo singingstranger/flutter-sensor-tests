@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/machine_state.dart';
+import '../models/protocol_type.dart';
+import '../services/http_service.dart';
+import '../services/websocket_service.dart';
 import '../services/protocol.dart';
-
 class ControlViewModel extends ChangeNotifier {
-  final ProtocolService service;
+  ProtocolType _protocol = ProtocolType.http;
+  ProtocolType get protocol => _protocol;
+
+  ProtocolService? _service;
 
   MachineState _state = MachineState(
     sensorValue: 0,
@@ -14,16 +19,31 @@ class ControlViewModel extends ChangeNotifier {
 
   MachineState get state => _state;
 
-  Timer? _timer;
+  StreamSubscription? _subscription;
 
-  ControlViewModel(this.service) {
-    startPolling();
+  ControlViewModel() {
+    _initService();
+    startListening();
   }
 
-  void startPolling() {
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
-      final value = await service.getSensorValue();
+  void _initService() {
+    switch (_protocol) {
+      case ProtocolType.http:
+        _service = HttpService("http://127.0.0.1:8000");
+        break;
+      case ProtocolType.websocket:
+        _service = WebSocketService("ws://127.0.0.1:8000/ws");
+        break;
+      case ProtocolType.mqtt:
+        //implement mqtt later
+        break;
+    }
+  }
 
+  void startListening() {
+    _subscription?.cancel();
+
+    _subscription = _service!.sensorStream().listen((value) {
       _state = _state.copyWith(sensorValue: value);
       notifyListeners();
     });
@@ -33,20 +53,31 @@ class ControlViewModel extends ChangeNotifier {
     _state = _state.copyWith(running: value);
     notifyListeners();
 
-    await service.sendCommand(_state.running, _state.speed);
+    await _service!.sendCommand(_state.running, _state.speed);
   }
 
   Future<void> updateSpeed(double value) async {
     _state = _state.copyWith(speed: value);
     notifyListeners();
 
-    await service.sendCommand(_state.running, _state.speed);
+    await _service!.sendCommand(_state.running, _state.speed);
+  }
+
+  void setProtocol(ProtocolType type) {
+    _subscription?.cancel();
+    _service?.dispose();
+
+    _protocol = type;
+    _initService();
+    startListening();
+
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    service.dispose();
+    _subscription?.cancel();
+    _service?.dispose();
     super.dispose();
   }
 }

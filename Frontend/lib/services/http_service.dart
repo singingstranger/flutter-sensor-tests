@@ -8,6 +8,14 @@ class HttpService implements ProtocolService {
   HttpService(this.baseUrl);
 
   @override
+  Stream<double> sensorStream() async*{
+    while(true){
+      final value = await getSensorValue();
+      yield value;
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+  }
+  @override
   Future<double> getSensorValue() async {
     final res = await http.get(Uri.parse("$baseUrl/sensor"));
     final data = jsonDecode(res.body);
