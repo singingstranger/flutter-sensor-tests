@@ -41,7 +41,7 @@ class ControlPage extends StatelessWidget {
                     ),
                     DropdownMenuItem(
                       value: ProtocolType.mqtt,
-                      child: Text("MQTT (Coming Soon)"),
+                      child: Text("MQTT (Pub/Sub)"),
                     ),
                   ],
                 ), 
