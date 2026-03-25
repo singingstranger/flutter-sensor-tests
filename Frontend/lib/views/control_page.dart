@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/control_viewmodel.dart';
 import '../models/protocol_type.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class ControlPage extends StatelessWidget {
   final ControlViewModel viewModel;
@@ -28,6 +29,7 @@ class ControlPage extends StatelessWidget {
                       viewModel.setProtocol(value);
                     }
                   },
+
                   items: const [
                     DropdownMenuItem(
                       value: ProtocolType.http,
@@ -65,6 +67,24 @@ class ControlPage extends StatelessWidget {
                   min: 0,
                   max: 5,
                   onChanged: viewModel.updateSpeed,
+                ),
+                SizedBox(
+                  height: 200,
+                  child: LineChart(
+                    LineChartData( 
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: List.generate(
+                            viewModel.history.length,
+                            (i) => FlSpot(i.toDouble(), viewModel.history[i]),
+                            ),
+                            isCurved: true,
+                            dotData: FlDotData(show:false),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 ),
               ],
             ),

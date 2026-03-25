@@ -6,6 +6,9 @@ import '../services/http_service.dart';
 import '../services/websocket_service.dart';
 import '../services/protocol.dart';
 class ControlViewModel extends ChangeNotifier {
+  List<double> _history = [];
+  List<double> get history => _history;
+
   ProtocolType _protocol = ProtocolType.http;
   ProtocolType get protocol => _protocol;
 
@@ -45,6 +48,10 @@ class ControlViewModel extends ChangeNotifier {
 
     _subscription = _service!.sensorStream().listen((value) {
       _state = _state.copyWith(sensorValue: value);
+      _history.add(value);
+      if (_history.length > 50){
+        _history.removeAt(0);
+      }
       notifyListeners();
     });
   }
@@ -52,6 +59,13 @@ class ControlViewModel extends ChangeNotifier {
   Future<void> toggleRunning(bool value) async {
     _state = _state.copyWith(running: value);
     notifyListeners();
+
+    if (!state.running) {
+    _subscription?.pause();
+    } 
+    else {
+      _subscription?.resume();
+    }
 
     await _service!.sendCommand(_state.running, _state.speed);
   }
