@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:sensorsim_app/services/mqtt_service.dart';
 import '../models/machine_state.dart';
 import '../models/protocol_type.dart';
 import '../services/http_service.dart';
@@ -38,7 +39,7 @@ class ControlViewModel extends ChangeNotifier {
         _service = WebSocketService("ws://127.0.0.1:8000/ws");
         break;
       case ProtocolType.mqtt:
-        //implement mqtt later
+        _service = MqttService();
         break;
     }
   }
@@ -46,6 +47,9 @@ class ControlViewModel extends ChangeNotifier {
   void startListening() {
     _subscription?.cancel();
 
+    if (_service == null){
+      return;
+    }
     _subscription = _service!.sensorStream().listen((value) {
       _state = _state.copyWith(sensorValue: value);
       _history.add(value);
@@ -87,7 +91,7 @@ class ControlViewModel extends ChangeNotifier {
 
     notifyListeners();
   }
-
+  
   @override
   void dispose() {
     _subscription?.cancel();
