@@ -42,12 +42,17 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             if not machine_state["running"]:
-                value = 0
-            else:
-                t = time.time() - start_time
-                value = machine_state["speed"] * (50 + 30 * math.sin(t))
+                await websocket.send_json({"value": 0, "running": False})
+                await asyncio.sleep(0.5)
+                continue
+            
+            t = time.time() - start_time
+            value = machine_state["speed"] * (50 + 30 * math.sin(t))
 
-            await websocket.send_json({"value": round(value, 2)})
+            await websocket.send_json({
+                "value": round(value, 2),
+                "running": True
+            })
 
             await asyncio.sleep(0.5)
 
