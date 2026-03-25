@@ -39,23 +39,28 @@ import asyncio
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
-    try:
+    async def sender():
         while True:
             if not machine_state["running"]:
-                await websocket.send_json({"value": 0, "running": False})
-                await asyncio.sleep(0.5)
-                continue
-            
-            t = time.time() - start_time
-            value = machine_state["speed"] * (50 + 30 * math.sin(t))
+                value = 0
+            else:
+                t = time.time() - start_time
+                value = machine_state["speed"] * (50 + 30 * math.sin(t))
 
             await websocket.send_json({
                 "value": round(value, 2),
-                "running": True
+                "running": machine_state["running"]
             })
 
             await asyncio.sleep(0.5)
 
-    except Exception as e:
-        print("WebSocket disconnected:", e)
+    async def receiver():
+        while True:
+            data = await websocket.receive_json()
+            print("Websocket command:", data)
+
+            machine_state["running"] = data.get("running", True)
+            machine_state["speed"] = data.get("speed", 1.0)
+    
+    await asyncio.gather(sender(), receiver())
         

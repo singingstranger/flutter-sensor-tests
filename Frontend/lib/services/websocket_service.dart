@@ -27,15 +27,13 @@ class WebSocketService implements ProtocolService {
   @override
   Stream<double> sensorStream() => _stream;
 
-  @override
-  Future<double> getSensorValue() async {
-    // Not really used for WebSockets anymore
-    return 0;
-  }
 
   @override
-  Future<void> sendCommand(bool running, double speed) async {
-    // Will implement later (bidirectional WS)
+  Future<void> sendCommand(bool running, double speed) async{
+    channel.sink.add(jsonEncode({
+      "running": running,
+      "speed": speed
+    }));
   }
 
   @override
