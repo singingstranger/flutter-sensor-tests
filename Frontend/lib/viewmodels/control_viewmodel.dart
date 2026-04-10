@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:sensorsim_app/services/mqtt_service.dart';
 import '../models/machine_state.dart';
 import '../models/protocol_type.dart';
+import '../models/protocol_stats.dart';
 import '../services/http_service.dart';
 import '../services/websocket_service.dart';
 import '../services/protocol.dart';
+import '../services/mqtt_service.dart';
 class ControlViewModel extends ChangeNotifier {
   List<double> _history = [];
   List<double> get history => _history;
+
+  final Map<ProtocolType, ProtocolService> _services = {};
+  final Map<ProtocolType, ProtocolStats> _stats = {};
+
+  Map<ProtocolType, ProtocolStats> get stats => _stats;
 
   ProtocolType _protocol = ProtocolType.http;
   ProtocolType get protocol => _protocol;
@@ -31,17 +37,40 @@ class ControlViewModel extends ChangeNotifier {
   }
 
   void _initService() {
-    switch (_protocol) {
-      case ProtocolType.http:
-        _service = HttpService("http://127.0.0.1:8000");
-        break;
-      case ProtocolType.websocket:
-        _service = WebSocketService("ws://127.0.0.1:8000/ws");
-        break;
-      case ProtocolType.mqtt:
-        _service = MqttService();
-        break;
+    if(_services.isNotEmpty) return;
+    _services[ProtocolType.http] =
+        HttpService("http://127.0.0.1:8000");
+
+    _services[ProtocolType.websocket] =
+        WebSocketService("ws://127.0.0.1:8000/ws");
+
+    _services[ProtocolType.mqtt] =
+        MqttService();
+
+    for (final entry in _services.entries) {
+      _stats[entry.key] = ProtocolStats();
+
+      entry.value.sensorStream().listen((data) {
+        final stats = _stats[entry.key]!;
+
+        final now = DateTime.now().millisecondsSinceEpoch / 1000;
+        final latency = now - data.timestamp;
+
+        stats.latestValue = data.value;
+        stats.values.add(data.value);
+        stats.latencies.add(latency);
+
+        if (stats.values.length > 50) {
+          stats.values.removeAt(0);
+          stats.latencies.removeAt(0);
+        }
+
+        stats.messageCount++;
+
+        notifyListeners();
+      });
     }
+    _service = _services[_protocol];
   }
 
   void startListening() {
@@ -50,9 +79,9 @@ class ControlViewModel extends ChangeNotifier {
     if (_service == null){
       return;
     }
-    _subscription = _service!.sensorStream().listen((value) {
-      _state = _state.copyWith(sensorValue: value);
-      _history.add(value);
+    _subscription = _service!.sensorStream().listen((data) {
+      _state = _state.copyWith(sensorValue: data.value);
+      _history.add(data.value);
       if (_history.length > 50){
         _history.removeAt(0);
       }
@@ -86,7 +115,7 @@ class ControlViewModel extends ChangeNotifier {
     _service?.dispose();
 
     _protocol = type;
-    _initService();
+    _service = _services[_protocol];
     startListening();
 
     notifyListeners();
@@ -99,3 +128,4 @@ class ControlViewModel extends ChangeNotifier {
     super.dispose();
   }
 }
+

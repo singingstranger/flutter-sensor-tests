@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'protocol.dart';
+import 'package:sensorsim_app/models/sensor_data.dart';
 
 class HttpService implements ProtocolService {
   final String baseUrl;
@@ -8,10 +9,12 @@ class HttpService implements ProtocolService {
   HttpService(this.baseUrl);
 
   @override
-  Stream<double> sensorStream() async*{
+  Stream<SensorData> sensorStream() async*{
     while(true){
       final value = await getSensorValue();
-      yield value;
+      yield SensorData(
+        value: value, 
+        timestamp: DateTime.now().millisecondsSinceEpoch.toDouble(),);
       await Future.delayed(const Duration(milliseconds: 500));
     }
   }
